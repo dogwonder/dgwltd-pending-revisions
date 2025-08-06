@@ -1,0 +1,1 @@
+(()=>{"use strict";const e=()=>{console.log("DGW Pending Revisions: Public functionality loaded")};"loading"===document.readyState?document.addEventListener("DOMContentLoaded",e):e()})();

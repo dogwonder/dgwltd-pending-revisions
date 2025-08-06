@@ -1,0 +1,147 @@
+// DGW Pending Revisions - Consolidated Editor Styles
+// This file consolidates all admin and editor styles for the pending revisions plugin
+
+// Dashboard styles
+.dgw-pending-revisions-dashboard {
+
+  .count-badge {
+    background: #d63638;
+    color: white;
+    padding: 3px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: bold;
+  }
+
+  .wp-list-table {
+    .column-current-revision,
+    .column-latest-revision,
+    .column-pending-count,
+    .column-date {
+      width: 100px;
+    }
+    
+    .column-author {
+      width: 120px;
+    }
+  }
+}
+
+// Editor sidebar styles
+.dgw-pending-revisions-sidebar {
+  .revision-item {
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 12px;
+    margin-bottom: 8px;
+    background: #f9f9f9;
+    
+    &.pending {
+      border-left: 4px solid #f0b849;
+    }
+    
+    &.accepted {
+      border-left: 4px solid #46b450;
+    }
+    
+    &.rejected {
+      border-left: 4px solid #dc3232;
+    }
+  }
+  
+  .revision-actions {
+    margin-top: 8px;
+    display: flex;
+    gap: 8px;
+    
+    .button {
+      font-size: 12px;
+      padding: 4px 8px;
+      height: auto;
+    }
+  }
+  
+  .revision-meta {
+    font-size: 12px;
+    color: #666;
+    margin-top: 4px;
+  }
+
+  .components-button {
+    svg {
+      height: 1rem;
+      width: 1rem;
+    }
+  }
+
+  .dgw-revision-item {
+    margin-block-end: 1rem;
+    padding-block-end: 1rem;
+    border-bottom: 1px solid #cccccc;
+  }
+
+  .dgw-revision-title, 
+  .dgw-stat-content {
+    display: flex;
+    gap: 1ch;
+  }
+
+  .dgw-revision-status {
+    display: flex;
+    justify-content: center;
+    gap: 0.25ch;
+  }
+}
+
+// Editing mode selector
+.editing-mode-selector {
+  .mode-option {
+    display: flex;
+    align-items: center;
+    padding: 8px 0;
+    
+    input[type="radio"] {
+      margin-right: 8px;
+    }
+  }
+  
+  .mode-description {
+    font-size: 12px;
+    color: #666;
+    margin-left: 20px;
+    margin-top: 4px;
+  }
+}
+
+// Revision comparison styles
+.revision-comparison {
+  .revision-diff {
+    background: #f8f9fa;
+    border: 1px solid #e1e4e8;
+    border-radius: 4px;
+    padding: 16px;
+    margin: 16px 0;
+  }
+  
+  .diff-added {
+    background: #e6ffed;
+    color: #24292e;
+  }
+  
+  .diff-removed {
+    background: #ffeef0;
+    color: #24292e;
+  }
+}
+
+.dgw-status-badge {
+}
+.dgw-status-published {
+    color: #00a32a;
+}
+.dgw-status-pending {
+    color: #f0b849;
+}
+.dgw-status-rejected {
+    color: #d63638;
+}
