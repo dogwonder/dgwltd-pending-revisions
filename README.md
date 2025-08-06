@@ -73,7 +73,11 @@ dgwltd-pending-revisions/
 
 ### User capabilities
 
-Custom capability `accept_revisions` to editor, and administrator
+Custom capability `accept_revisions` to editor, and administrator.
+
+✅ Authors: Can create and submit revisions for approval
+✅ Editors & Admins: Can approve, reject, and publish revisions
+✅ UI: Only shows approve/reject buttons to permitted users
 
 ### Block Editor
 
