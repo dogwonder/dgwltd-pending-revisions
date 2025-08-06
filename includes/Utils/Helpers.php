@@ -87,7 +87,7 @@ class Helpers {
      * @return int|false
      */
     public static function get_accepted_revision_id(int $post_id): int|false {
-        $revision_id = get_post_meta($post_id, '_dpr_accepted_revision_id', true);
+        $revision_id = get_post_meta($post_id, '_fpr_accepted_revision_id', true);
         return $revision_id ? absint($revision_id) : false;
     }
     
@@ -100,7 +100,7 @@ class Helpers {
      * @return bool
      */
     public static function set_accepted_revision_id(int $post_id, int $revision_id): bool {
-        return (bool) update_post_meta($post_id, '_dpr_accepted_revision_id', $revision_id);
+        return (bool) update_post_meta($post_id, '_fpr_accepted_revision_id', $revision_id);
     }
     
     /**

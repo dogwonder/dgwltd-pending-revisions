@@ -106,15 +106,12 @@ class Capabilities {
                 // Grant limited capabilities for their own content
                 switch ($caps[0]) {
                     case 'accept_revisions':
-                        // Authors can only accept their own revisions if editing mode allows
-                        $editing_mode = $this->get_post_editing_mode($post_id);
-                        if ($editing_mode === 'open') {
-                            $allcaps[$caps[0]] = true;
-                        }
+                        // Only editors and administrators can approve/reject revisions
+                        // This is part of the editorial workflow and should not be granted to authors
                         break;
                         
                     case 'manage_pending_revisions':
-                        // Authors can manage their own pending revisions
+                        // Authors can manage their own pending revisions (view, create)
                         $allcaps[$caps[0]] = true;
                         break;
                 }

@@ -44,7 +44,7 @@ class Content_Filter {
         }
         
         // Get accepted revision content
-        $accepted_id = get_post_meta($post_id, '_dpr_accepted_revision_id', true);
+        $accepted_id = get_post_meta($post_id, '_fpr_accepted_revision_id', true);
         if (!$accepted_id || $accepted_id == $post_id) {
             return $content;
         }
@@ -78,7 +78,7 @@ class Content_Filter {
         }
         
         // Get accepted revision title
-        $accepted_id = get_post_meta($post_id, '_dpr_accepted_revision_id', true);
+        $accepted_id = get_post_meta($post_id, '_fpr_accepted_revision_id', true);
         if (!$accepted_id || $accepted_id == $post_id) {
             return $title;
         }
@@ -111,7 +111,7 @@ class Content_Filter {
         }
         
         // Get accepted revision excerpt
-        $accepted_id = get_post_meta($post_id, '_dpr_accepted_revision_id', true);
+        $accepted_id = get_post_meta($post_id, '_fpr_accepted_revision_id', true);
         if (!$accepted_id || $accepted_id == $post_id) {
             return $excerpt;
         }
@@ -150,7 +150,7 @@ class Content_Filter {
         }
         
         // Get accepted revision metadata
-        $accepted_id = get_post_meta($object_id, '_dpr_accepted_revision_id', true);
+        $accepted_id = get_post_meta($object_id, '_fpr_accepted_revision_id', true);
         if (!$accepted_id || $accepted_id == $object_id) {
             return $value;
         }
@@ -204,7 +204,7 @@ class Content_Filter {
             }
             
             // Get accepted revision
-            $accepted_id = get_post_meta($object_id, '_dpr_accepted_revision_id', true);
+            $accepted_id = get_post_meta($object_id, '_fpr_accepted_revision_id', true);
             if (!$accepted_id || $accepted_id == $object_id) {
                 continue;
             }

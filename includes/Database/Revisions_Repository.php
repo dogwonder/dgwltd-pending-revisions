@@ -37,7 +37,7 @@ class Revisions_Repository extends Repository {
      * @return array
      */
     public function get_pending_revisions(int $post_id): array {
-        $accepted_id = get_post_meta($post_id, '_dpr_accepted_revision_id', true);
+        $accepted_id = get_post_meta($post_id, '_fpr_accepted_revision_id', true);
         
         if (!$accepted_id) {
             return [];

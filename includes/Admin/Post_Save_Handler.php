@@ -55,7 +55,7 @@ class Post_Save_Handler {
         
         // If this is a new post in pending mode, set initial accepted revision
         if (!$update && $editing_mode === 'pending') {
-            update_post_meta($post_id, '_dpr_accepted_revision_id', $post_id);
+            update_post_meta($post_id, '_fpr_accepted_revision_id', $post_id);
         }
     }
     

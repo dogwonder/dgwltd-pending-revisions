@@ -103,14 +103,6 @@ class Admin {
             'dgw_pending_revisions_general'
         );
         
-        // Notification settings
-        add_settings_field(
-            'notification_settings',
-            __('Notifications', $this->text_domain),
-            [$this, 'notification_settings_callback'],
-            'dgw_pending_revisions_settings',
-            'dgw_pending_revisions_general'
-        );
     }
     
     /**
@@ -167,22 +159,6 @@ class Admin {
     }
     
     /**
-     * Notification settings callback
-     *
-     * @since 1.0.0
-     * @return void
-     */
-    public function notification_settings_callback(): void {
-        $settings = get_option('dgw_pending_revisions_settings', []);
-        $enable_notifications = $settings['enable_email_notifications'] ?? true;
-        
-        echo '<label>';
-        echo '<input type="checkbox" name="dgw_pending_revisions_settings[enable_email_notifications]" value="1"' . checked($enable_notifications, true, false) . '> ';
-        echo esc_html__('Enable email notifications for revision status changes', $this->text_domain);
-        echo '</label>';
-    }
-    
-    /**
      * Sanitize settings
      *
      * @since 1.0.0
@@ -205,10 +181,6 @@ class Admin {
                 $sanitized[$setting_key] = in_array($input[$setting_key], $allowed_modes) ? $input[$setting_key] : 'open';
             }
         }
-        
-        // Sanitize boolean settings
-        $sanitized['enable_email_notifications'] = !empty($input['enable_email_notifications']);
-        $sanitized['enable_revision_analytics'] = !empty($input['enable_revision_analytics']);
         
         return $sanitized;
     }

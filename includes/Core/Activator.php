@@ -157,15 +157,8 @@ class Activator {
             'dgw_pending_revisions_settings' => [
                 'post_default_editing_mode' => 'open',
                 'page_default_editing_mode' => 'open',
-                'enable_email_notifications' => true,
-                'enable_revision_analytics' => true,
                 'auto_cleanup_old_revisions' => false,
-                'revision_retention_days' => 30,
-                'notification_messages' => [
-                    'revision_submitted' => __('Revision submitted and pending approval.', 'dgwltd-pending-revisions'),
-                    'revision_approved' => __('Revision has been approved and published.', 'dgwltd-pending-revisions'),
-                    'revision_rejected' => __('Revision has been rejected.', 'dgwltd-pending-revisions'),
-                ],
+                'revision_retention_days' => 30
             ],
         ];
         

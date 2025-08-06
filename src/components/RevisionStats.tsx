@@ -105,7 +105,7 @@ export const RevisionStats = ({
                 {/* Editing Mode */}
                 <FlexItem>
                     <div className={`dgw-stat-item ${modeInfo.className}`}>
-                        <Flex align="center" gap={2}>
+                        <Flex align="flex-start" justify="auto" gap={2}>
                             <FlexItem>
                                 <Icon icon={modeInfo.icon} size={20} />
                             </FlexItem>
@@ -126,7 +126,7 @@ export const RevisionStats = ({
                 {/* Total Revisions */}
                 <FlexItem>
                     <div className="dgw-stat-item">
-                        <Flex align="center" gap={2}>
+                        <Flex align="flex-start" justify="auto" gap={2}>
                             <FlexItem>
                                 <Icon icon={backup} size={20} />
                             </FlexItem>
@@ -148,7 +148,7 @@ export const RevisionStats = ({
                 {pendingCount > 0 && (
                     <FlexItem>
                         <div className="dgw-stat-item dgw-stat-pending">
-                            <Flex align="center" gap={2}>
+                            <Flex align="flex-start" justify="auto" gap={2}>
                                 <FlexItem>
                                     <Icon icon={info} size={20} />
                                 </FlexItem>
@@ -171,12 +171,12 @@ export const RevisionStats = ({
                 {acceptedRevision && (
                     <FlexItem>
                         <div className="dgw-stat-item dgw-stat-published">
-                            <Flex align="center" gap={2}>
+                            <Flex align="flex-start" justify="auto" gap={2}>
                                 <FlexItem>
                                     <Icon icon={check} size={20} />
                                 </FlexItem>
                                 <FlexItem>
-                                    <div className="dgw-stat-content">
+                                    <div className="dgw-stat-content dgw-stat-content--meta">
                                         <span className="dgw-stat-label">
                                             {__('Currently Published', 'dgwltd-pending-revisions')}
                                         </span>

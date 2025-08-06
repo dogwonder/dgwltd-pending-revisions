@@ -114,7 +114,7 @@ class Meta_Boxes {
      */
     public function render_revision_history_meta_box(\WP_Post $post): void {
         $revisions = $this->get_post_revisions($post->ID);
-        $accepted_revision_id = get_post_meta($post->ID, '_dpr_accepted_revision_id', true);
+        $accepted_revision_id = get_post_meta($post->ID, '_fpr_accepted_revision_id', true);
         
         ?>
         <div class="dgw-revision-history">

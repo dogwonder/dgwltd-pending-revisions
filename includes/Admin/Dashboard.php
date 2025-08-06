@@ -212,7 +212,7 @@ class Dashboard {
                    MAX(r.ID) as latest_revision_id
             FROM {$wpdb->posts} p
             INNER JOIN {$wpdb->posts} r ON p.ID = r.post_parent
-            LEFT JOIN {$wpdb->postmeta} pm ON p.ID = pm.post_id AND pm.meta_key = '_dpr_accepted_revision_id'
+            LEFT JOIN {$wpdb->postmeta} pm ON p.ID = pm.post_id AND pm.meta_key = '_fpr_accepted_revision_id'
             WHERE p.post_status = 'publish'
             AND r.post_type = 'revision'
             AND r.post_status = 'inherit'
@@ -234,15 +234,14 @@ class Dashboard {
             $post = get_post($result->ID);
             if (!$post) continue;
             
-            // Get current revision number (total revisions for this post)
-            $total_revisions = wp_get_post_revisions($post->ID, ['posts_per_page' => -1]);
-            $current_revision_number = count($total_revisions) + 1; // +1 for the published version
+            // Get current revision number (total revisions for this post) using efficient count query
+            $current_revision_number = $this->get_revision_count($post->ID) + 1; // +1 for the published version
             
             // Get pending revision count
             $pending_count = $this->get_pending_revision_count($post->ID);
             
             // Get published version ID (currently accepted revision)
-            $published_version_id = get_post_meta($post->ID, '_dpr_accepted_revision_id', true) ?: $post->ID;
+            $published_version_id = get_post_meta($post->ID, '_fpr_accepted_revision_id', true) ?: $post->ID;
             
             $posts_data[] = [
                 'post' => $post,
@@ -270,7 +269,7 @@ class Dashboard {
         $query = "
             SELECT COUNT(r.ID)
             FROM {$wpdb->posts} r
-            LEFT JOIN {$wpdb->postmeta} pm ON {$post_id} = pm.post_id AND pm.meta_key = '_dpr_accepted_revision_id'
+            LEFT JOIN {$wpdb->postmeta} pm ON {$post_id} = pm.post_id AND pm.meta_key = '_fpr_accepted_revision_id'
             WHERE r.post_parent = %d
             AND r.post_type = 'revision'
             AND r.post_status = 'inherit'
@@ -284,6 +283,27 @@ class Dashboard {
         ";
         
         $count = $wpdb->get_var($wpdb->prepare($query, $post_id));
+        
+        return (int) $count;
+    }
+    
+    /**
+     * Get total revision count for a post efficiently
+     *
+     * @since 1.0.0
+     * @param int $post_id Post ID
+     * @return int
+     */
+    private function get_revision_count(int $post_id): int {
+        global $wpdb;
+        
+        $count = $wpdb->get_var($wpdb->prepare("
+            SELECT COUNT(*)
+            FROM {$wpdb->posts}
+            WHERE post_parent = %d
+            AND post_type = 'revision'
+            AND post_status = 'inherit'
+        ", $post_id));
         
         return (int) $count;
     }

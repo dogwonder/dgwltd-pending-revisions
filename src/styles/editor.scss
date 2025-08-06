@@ -86,6 +86,10 @@
     gap: 1ch;
   }
 
+  .dgw-stat-content--meta {
+    flex-wrap: wrap;
+  }
+
   .dgw-revision-status {
     display: flex;
     justify-content: center;

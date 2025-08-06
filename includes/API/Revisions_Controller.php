@@ -241,7 +241,7 @@ class Revisions_Controller extends REST_Controller {
         ]);
         
         $data = [];
-        $accepted_revision_id = get_post_meta($post_id, '_dpr_accepted_revision_id', true);
+        $accepted_revision_id = get_post_meta($post_id, '_fpr_accepted_revision_id', true);
         
         foreach ($revisions as $revision) {
             $revision_data = $this->prepare_item_for_response($revision, $request)->get_data();
@@ -282,7 +282,7 @@ class Revisions_Controller extends REST_Controller {
         }
         
         $data = $this->prepare_item_for_response($revision, $request)->get_data();
-        $accepted_revision_id = get_post_meta($post_id, '_dpr_accepted_revision_id', true);
+        $accepted_revision_id = get_post_meta($post_id, '_fpr_accepted_revision_id', true);
         $data['is_accepted'] = ($revision->ID == $accepted_revision_id);
         $data['is_pending'] = ($revision->ID != $accepted_revision_id);
         
@@ -314,7 +314,7 @@ class Revisions_Controller extends REST_Controller {
         }
         
         // Update the accepted revision ID
-        $result = update_post_meta($post_id, '_dpr_accepted_revision_id', $revision_id);
+        $result = update_post_meta($post_id, '_fpr_accepted_revision_id', $revision_id);
         
         if ($result === false) {
             return $this->error_response(
@@ -327,8 +327,6 @@ class Revisions_Controller extends REST_Controller {
         // Log the approval
         $this->log_revision_action($post_id, $revision_id, 'approved', get_current_user_id());
         
-        // Send notification if enabled
-        $this->send_revision_notification($post_id, $revision_id, 'approved');
         
         return $this->success_response(
             ['revision_id' => $revision_id],
@@ -374,8 +372,6 @@ class Revisions_Controller extends REST_Controller {
         // Log the rejection
         $this->log_revision_action($post_id, $revision_id, 'rejected', get_current_user_id());
         
-        // Send notification if enabled
-        $this->send_revision_notification($post_id, $revision_id, 'rejected');
         
         return $this->success_response(
             ['revision_id' => $revision_id],
@@ -399,7 +395,7 @@ class Revisions_Controller extends REST_Controller {
             FROM {$wpdb->posts} r
             LEFT JOIN {$wpdb->posts} p ON r.post_parent = p.ID
             LEFT JOIN {$wpdb->users} u ON r.post_author = u.ID
-            LEFT JOIN {$wpdb->postmeta} pm ON p.ID = pm.post_id AND pm.meta_key = '_dpr_accepted_revision_id'
+            LEFT JOIN {$wpdb->postmeta} pm ON p.ID = pm.post_id AND pm.meta_key = '_fpr_accepted_revision_id'
             WHERE r.post_type = 'revision'
             AND r.post_status = 'inherit'
             AND (pm.meta_value IS NULL OR pm.meta_value != r.ID)
@@ -463,7 +459,7 @@ class Revisions_Controller extends REST_Controller {
             SELECT COUNT(*)
             FROM {$wpdb->posts} r
             LEFT JOIN {$wpdb->posts} p ON r.post_parent = p.ID
-            LEFT JOIN {$wpdb->postmeta} pm ON p.ID = pm.post_id AND pm.meta_key = '_dpr_accepted_revision_id'
+            LEFT JOIN {$wpdb->postmeta} pm ON p.ID = pm.post_id AND pm.meta_key = '_fpr_accepted_revision_id'
             WHERE r.post_type = 'revision'
             AND r.post_status = 'inherit'
             AND (pm.meta_value IS NULL OR pm.meta_value != r.ID)
@@ -481,7 +477,7 @@ class Revisions_Controller extends REST_Controller {
             SELECT COUNT(*)
             FROM {$wpdb->postmeta} pm
             JOIN {$wpdb->posts} r ON pm.meta_value = r.ID
-            WHERE pm.meta_key = '_dpr_accepted_revision_id'
+            WHERE pm.meta_key = '_fpr_accepted_revision_id'
             AND DATE(r.post_modified) = %s
         ", $today));
         
@@ -501,7 +497,7 @@ class Revisions_Controller extends REST_Controller {
             SELECT COUNT(*)
             FROM {$wpdb->postmeta} pm
             JOIN {$wpdb->posts} r ON pm.meta_value = r.ID
-            WHERE pm.meta_key = '_dpr_accepted_revision_id'
+            WHERE pm.meta_key = '_fpr_accepted_revision_id'
             AND DATE(r.post_modified) >= %s
         ", $week_start));
         
@@ -520,7 +516,7 @@ class Revisions_Controller extends REST_Controller {
             SELECT COUNT(*)
             FROM {$wpdb->postmeta} pm
             JOIN {$wpdb->posts} r ON pm.meta_value = r.ID
-            WHERE pm.meta_key = '_dpr_accepted_revision_id'
+            WHERE pm.meta_key = '_fpr_accepted_revision_id'
             AND DATE(r.post_modified) >= %s
         ", $month_start));
         
@@ -569,7 +565,7 @@ class Revisions_Controller extends REST_Controller {
         $post_id = $revision->post_parent;
         
         // Update the accepted revision ID
-        $result = update_post_meta($post_id, '_dpr_accepted_revision_id', $revision_id);
+        $result = update_post_meta($post_id, '_fpr_accepted_revision_id', $revision_id);
         
         if ($result === false) {
             return $this->error_response(
@@ -582,8 +578,6 @@ class Revisions_Controller extends REST_Controller {
         // Log the approval
         $this->log_revision_action($post_id, $revision_id, 'approved', get_current_user_id());
         
-        // Send notification if enabled
-        $this->send_revision_notification($post_id, $revision_id, 'approved');
         
         return $this->success_response(
             ['revision_id' => $revision_id, 'post_id' => $post_id],
@@ -626,8 +620,6 @@ class Revisions_Controller extends REST_Controller {
         // Log the rejection
         $this->log_revision_action($post_id, $revision_id, 'rejected', get_current_user_id());
         
-        // Send notification if enabled
-        $this->send_revision_notification($post_id, $revision_id, 'rejected');
         
         return $this->success_response(
             ['revision_id' => $revision_id, 'post_id' => $post_id],
@@ -745,8 +737,6 @@ class Revisions_Controller extends REST_Controller {
         // Log the creation
         $this->log_revision_action($post_parent, $revision_id, 'created', get_current_user_id());
         
-        // Send notification if enabled
-        $this->send_revision_notification($post_parent, $revision_id, 'created');
         
         // Trigger action for other plugins
         do_action('dgw_pending_revision_created', $revision_id, $post_parent);
@@ -904,25 +894,6 @@ class Revisions_Controller extends REST_Controller {
         }
     }
     
-    /**
-     * Send revision notification
-     *
-     * @since 1.0.0
-     * @param int $post_id Post ID
-     * @param int $revision_id Revision ID
-     * @param string $action Action performed
-     * @return void
-     */
-    private function send_revision_notification(int $post_id, int $revision_id, string $action): void {
-        $settings = get_option('dgw_pending_revisions_settings', []);
-        
-        if (empty($settings['enable_email_notifications'])) {
-            return;
-        }
-        
-        // This would typically send email notifications
-        // Implementation would depend on specific requirements
-    }
     
     /**
      * Quick switch published revision (bypass approval workflow)
@@ -951,7 +922,7 @@ class Revisions_Controller extends REST_Controller {
         }
         
         // Store previous published revision for rollback capability
-        $previous_revision_id = get_post_meta($post_id, '_dpr_accepted_revision_id', true);
+        $previous_revision_id = get_post_meta($post_id, '_fpr_accepted_revision_id', true);
         if ($previous_revision_id) {
             update_post_meta($post_id, '_dgw_last_known_good', $previous_revision_id);
             // Keep history of last 5 published revisions for emergency rollback
@@ -968,7 +939,7 @@ class Revisions_Controller extends REST_Controller {
         }
         
         // Set new published revision
-        $result = update_post_meta($post_id, '_dpr_accepted_revision_id', $revision_id);
+        $result = update_post_meta($post_id, '_fpr_accepted_revision_id', $revision_id);
         
         if ($result === false) {
             return $this->error_response(
@@ -1046,10 +1017,10 @@ class Revisions_Controller extends REST_Controller {
         }
         
         // Get current revision for logging
-        $current_revision_id = get_post_meta($post_id, '_dpr_accepted_revision_id', true);
+        $current_revision_id = get_post_meta($post_id, '_fpr_accepted_revision_id', true);
         
         // Revert to last known good
-        $result = update_post_meta($post_id, '_dpr_accepted_revision_id', $last_known_good);
+        $result = update_post_meta($post_id, '_fpr_accepted_revision_id', $last_known_good);
         
         if ($result === false) {
             return $this->error_response(

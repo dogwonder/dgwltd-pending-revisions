@@ -264,7 +264,7 @@ class Assets {
                 'postType' => $post->post_type,
                 'postStatus' => $post->post_status,
                 'editingMode' => $this->get_post_editing_mode($post->ID),
-                'acceptedRevisionId' => get_post_meta($post->ID, '_dpr_accepted_revision_id', true),
+                'acceptedRevisionId' => get_post_meta($post->ID, '_fpr_accepted_revision_id', true),
                 'canAcceptRevisions' => current_user_can('accept_revisions', $post->ID),
                 'apiUrl' => rest_url('dgw-pending-revisions/v1/'),
                 'nonce' => wp_create_nonce('wp_rest'),
