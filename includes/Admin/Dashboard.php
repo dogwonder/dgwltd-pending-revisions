@@ -264,27 +264,33 @@ class Dashboard {
      * @return int
      */
     private function get_pending_revision_count(int $post_id): int {
-        global $wpdb;
+        // Get all revisions for this post
+        $revisions = wp_get_post_revisions($post_id, [
+            'posts_per_page' => -1
+        ]);
         
-        $query = "
-            SELECT COUNT(r.ID)
-            FROM {$wpdb->posts} r
-            LEFT JOIN {$wpdb->postmeta} pm ON {$post_id} = pm.post_id AND pm.meta_key = '_fpr_accepted_revision_id'
-            WHERE r.post_parent = %d
-            AND r.post_type = 'revision'
-            AND r.post_status = 'inherit'
-            AND (pm.meta_value IS NULL OR pm.meta_value != r.ID)
-            AND NOT EXISTS (
-                SELECT 1 FROM {$wpdb->postmeta} pm2 
-                WHERE pm2.post_id = r.ID 
-                AND pm2.meta_key = '_dgw_revision_status' 
-                AND pm2.meta_value = 'rejected'
-            )
-        ";
+        if (empty($revisions)) {
+            return 0;
+        }
         
-        $count = $wpdb->get_var($wpdb->prepare($query, $post_id));
+        // Get the accepted revision ID for this post
+        $accepted_revision_id = get_post_meta($post_id, '_fpr_accepted_revision_id', true);
         
-        return (int) $count;
+        $pending_count = 0;
+        foreach ($revisions as $revision) {
+            // Skip if revision is rejected
+            $revision_status = get_post_meta($revision->ID, '_dgw_revision_status', true);
+            if ($revision_status === 'rejected') {
+                continue;
+            }
+            
+            // Count as pending if not accepted
+            if (!$accepted_revision_id || $accepted_revision_id != $revision->ID) {
+                $pending_count++;
+            }
+        }
+        
+        return $pending_count;
     }
     
     /**
@@ -295,16 +301,8 @@ class Dashboard {
      * @return int
      */
     private function get_revision_count(int $post_id): int {
-        global $wpdb;
-        
-        $count = $wpdb->get_var($wpdb->prepare("
-            SELECT COUNT(*)
-            FROM {$wpdb->posts}
-            WHERE post_parent = %d
-            AND post_type = 'revision'
-            AND post_status = 'inherit'
-        ", $post_id));
-        
-        return (int) $count;
+        // Use the repository method which now uses WordPress functions
+        $repository = new \DGW\PendingRevisions\Database\Revisions_Repository();
+        return $repository->get_revision_count($post_id);
     }
 }

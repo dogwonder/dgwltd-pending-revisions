@@ -219,6 +219,10 @@ final class Plugin {
         $this->loader->add_filter('the_title', $content_filter, 'filter_title', -1, 2);
         $this->loader->add_filter('the_excerpt', $content_filter, 'filter_excerpt', -1);
         $this->loader->add_filter('get_post_metadata', $content_filter, 'filter_meta', -1, 4);
+        
+        // Cache invalidation hooks
+        $this->loader->add_action('save_post', $this, 'clear_revision_cache');
+        $this->loader->add_action('updated_post_meta', $this, 'clear_revision_cache_on_meta_update', 10, 4);
     }
     
     /**
@@ -318,6 +322,38 @@ final class Plugin {
      */
     public function get_loader(): Loader {
         return $this->loader;
+    }
+    
+    /**
+     * Clear revision cache when posts are saved
+     *
+     * @since 1.0.0
+     * @param int $post_id Post ID
+     * @return void
+     */
+    public function clear_revision_cache(int $post_id): void {
+        $post = get_post($post_id);
+        if ($post && ($post->post_type === 'revision' || $post->post_type === 'post' || $post->post_type === 'page')) {
+            $repository = new \DGW\PendingRevisions\Database\Revisions_Repository();
+            $repository->clear_stats_cache();
+        }
+    }
+    
+    /**
+     * Clear revision cache when relevant meta is updated
+     *
+     * @since 1.0.0
+     * @param int $meta_id Meta ID
+     * @param int $post_id Post ID
+     * @param string $meta_key Meta key
+     * @param mixed $meta_value Meta value
+     * @return void
+     */
+    public function clear_revision_cache_on_meta_update(int $meta_id, int $post_id, string $meta_key, $meta_value): void {
+        if ($meta_key === '_fpr_accepted_revision_id' || $meta_key === '_dgw_revision_status') {
+            $repository = new \DGW\PendingRevisions\Database\Revisions_Repository();
+            $repository->clear_stats_cache();
+        }
     }
     
     /**

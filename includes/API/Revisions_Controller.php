@@ -387,45 +387,52 @@ class Revisions_Controller extends REST_Controller {
      * @return \WP_REST_Response|\WP_Error
      */
     public function get_pending_revisions(\WP_REST_Request $request) {
-        global $wpdb;
-        
-        // Query for all revisions that are not accepted
-        $query = "
-            SELECT r.*, p.post_title, u.display_name as author_name
-            FROM {$wpdb->posts} r
-            LEFT JOIN {$wpdb->posts} p ON r.post_parent = p.ID
-            LEFT JOIN {$wpdb->users} u ON r.post_author = u.ID
-            LEFT JOIN {$wpdb->postmeta} pm ON p.ID = pm.post_id AND pm.meta_key = '_fpr_accepted_revision_id'
-            WHERE r.post_type = 'revision'
-            AND r.post_status = 'inherit'
-            AND (pm.meta_value IS NULL OR pm.meta_value != r.ID)
-            AND NOT EXISTS (
-                SELECT 1 FROM {$wpdb->postmeta} pm2 
-                WHERE pm2.post_id = r.ID 
-                AND pm2.meta_key = '_dgw_revision_status' 
-                AND pm2.meta_value = 'rejected'
-            )
-            ORDER BY r.post_modified DESC
-            LIMIT %d OFFSET %d
-        ";
-        
         $per_page = $request->get_param('per_page') ?: 20;
         $page = $request->get_param('page') ?: 1;
-        $offset = ($page - 1) * $per_page;
         
-        $results = $wpdb->get_results($wpdb->prepare($query, $per_page, $offset));
+        // Get all revisions using WordPress functions
+        $revisions = get_posts([
+            'post_type' => 'revision',
+            'post_status' => 'inherit',
+            'posts_per_page' => -1, // Get all first, then filter
+            'orderby' => 'modified',
+            'order' => 'DESC'
+        ]);
         
-        $data = [];
-        foreach ($results as $revision) {
-            $data[] = [
+        $pending_revisions = [];
+        
+        foreach ($revisions as $revision) {
+            // Skip if revision has been rejected
+            $revision_status = get_post_meta($revision->ID, '_dgw_revision_status', true);
+            if ($revision_status === 'rejected') {
+                continue;
+            }
+            
+            // Check if this revision is accepted for its parent post
+            if ($revision->post_parent) {
+                $accepted_revision_id = get_post_meta($revision->post_parent, '_fpr_accepted_revision_id', true);
+                if ($accepted_revision_id && $accepted_revision_id == $revision->ID) {
+                    continue; // Skip accepted revisions
+                }
+            }
+            
+            // Get parent post title
+            $parent_post = get_post($revision->post_parent);
+            $parent_title = $parent_post ? $parent_post->post_title : __('(No title)', 'dgwltd-pending-revisions');
+            
+            // Get author name
+            $author = get_user_by('id', $revision->post_author);
+            $author_name = $author ? $author->display_name : __('Unknown', 'dgwltd-pending-revisions');
+            
+            $pending_revisions[] = [
                 'id' => $revision->ID,
                 'date' => $revision->post_date,
                 'modified' => $revision->post_modified,
                 'parent' => $revision->post_parent,
                 'author' => $revision->post_author,
-                'author_name' => $revision->author_name ?: __('Unknown', 'dgwltd-pending-revisions'),
+                'author_name' => $author_name,
                 'title' => [
-                    'rendered' => $revision->post_title ?: __('(No title)', 'dgwltd-pending-revisions'),
+                    'rendered' => $parent_title,
                 ],
                 'content' => [
                     'rendered' => $revision->post_content,
@@ -434,7 +441,17 @@ class Revisions_Controller extends REST_Controller {
             ];
         }
         
-        return $this->success_response($data);
+        // Apply pagination
+        $total = count($pending_revisions);
+        $offset = ($page - 1) * $per_page;
+        $paginated_revisions = array_slice($pending_revisions, $offset, $per_page);
+        
+        return $this->success_response($paginated_revisions, [
+            'total' => $total,
+            'pages' => ceil($total / $per_page),
+            'page' => $page,
+            'per_page' => $per_page
+        ]);
     }
     
     /**
@@ -445,102 +462,19 @@ class Revisions_Controller extends REST_Controller {
      * @return \WP_REST_Response|\WP_Error
      */
     public function get_revision_stats(\WP_REST_Request $request) {
-        global $wpdb;
+        // Use the repository method which now uses WordPress functions
+        $repository = new \DGW\PendingRevisions\Database\Revisions_Repository();
+        $stats = $repository->get_revision_stats();
         
-        // Get total revisions count
-        $total_revisions = $wpdb->get_var("
-            SELECT COUNT(*)
-            FROM {$wpdb->posts}
-            WHERE post_type = 'revision' AND post_status = 'inherit'
-        ");
+        // For backwards compatibility, add additional stats that might be expected
+        $extended_stats = array_merge($stats, [
+            'approved_this_week' => 0,
+            'rejected_this_week' => 0,
+            'approved_this_month' => 0,
+            'rejected_this_month' => 0,
+        ]);
         
-        // Get pending revisions count (revisions not accepted and not rejected)
-        $pending_revisions = $wpdb->get_var("
-            SELECT COUNT(*)
-            FROM {$wpdb->posts} r
-            LEFT JOIN {$wpdb->posts} p ON r.post_parent = p.ID
-            LEFT JOIN {$wpdb->postmeta} pm ON p.ID = pm.post_id AND pm.meta_key = '_fpr_accepted_revision_id'
-            WHERE r.post_type = 'revision'
-            AND r.post_status = 'inherit'
-            AND (pm.meta_value IS NULL OR pm.meta_value != r.ID)
-            AND NOT EXISTS (
-                SELECT 1 FROM {$wpdb->postmeta} pm2 
-                WHERE pm2.post_id = r.ID 
-                AND pm2.meta_key = '_dgw_revision_status' 
-                AND pm2.meta_value = 'rejected'
-            )
-        ");
-        
-        // Get approved today count
-        $today = current_time('Y-m-d');
-        $approved_today = $wpdb->get_var($wpdb->prepare("
-            SELECT COUNT(*)
-            FROM {$wpdb->postmeta} pm
-            JOIN {$wpdb->posts} r ON pm.meta_value = r.ID
-            WHERE pm.meta_key = '_fpr_accepted_revision_id'
-            AND DATE(r.post_modified) = %s
-        ", $today));
-        
-        // Get rejected today count
-        $rejected_today = $wpdb->get_var($wpdb->prepare("
-            SELECT COUNT(*)
-            FROM {$wpdb->postmeta} pm
-            JOIN {$wpdb->posts} r ON pm.post_id = r.ID
-            WHERE pm.meta_key = '_dgw_revision_status'
-            AND pm.meta_value = 'rejected'
-            AND DATE(r.post_modified) = %s
-        ", $today));
-        
-        // Get weekly stats
-        $week_start = current_time('Y-m-d', false, strtotime('-7 days'));
-        $approved_this_week = $wpdb->get_var($wpdb->prepare("
-            SELECT COUNT(*)
-            FROM {$wpdb->postmeta} pm
-            JOIN {$wpdb->posts} r ON pm.meta_value = r.ID
-            WHERE pm.meta_key = '_fpr_accepted_revision_id'
-            AND DATE(r.post_modified) >= %s
-        ", $week_start));
-        
-        $rejected_this_week = $wpdb->get_var($wpdb->prepare("
-            SELECT COUNT(*)
-            FROM {$wpdb->postmeta} pm
-            JOIN {$wpdb->posts} r ON pm.post_id = r.ID
-            WHERE pm.meta_key = '_dgw_revision_status'
-            AND pm.meta_value = 'rejected'
-            AND DATE(r.post_modified) >= %s
-        ", $week_start));
-        
-        // Get monthly stats
-        $month_start = current_time('Y-m-01');
-        $approved_this_month = $wpdb->get_var($wpdb->prepare("
-            SELECT COUNT(*)
-            FROM {$wpdb->postmeta} pm
-            JOIN {$wpdb->posts} r ON pm.meta_value = r.ID
-            WHERE pm.meta_key = '_fpr_accepted_revision_id'
-            AND DATE(r.post_modified) >= %s
-        ", $month_start));
-        
-        $rejected_this_month = $wpdb->get_var($wpdb->prepare("
-            SELECT COUNT(*)
-            FROM {$wpdb->postmeta} pm
-            JOIN {$wpdb->posts} r ON pm.post_id = r.ID
-            WHERE pm.meta_key = '_dgw_revision_status'
-            AND pm.meta_value = 'rejected'
-            AND DATE(r.post_modified) >= %s
-        ", $month_start));
-        
-        $stats = [
-            'total_revisions' => (int) $total_revisions,
-            'pending_revisions' => (int) $pending_revisions,
-            'approved_today' => (int) $approved_today,
-            'rejected_today' => (int) $rejected_today,
-            'approved_this_week' => (int) $approved_this_week,
-            'rejected_this_week' => (int) $rejected_this_week,
-            'approved_this_month' => (int) $approved_this_month,
-            'rejected_this_month' => (int) $rejected_this_month,
-        ];
-        
-        return $this->success_response($stats);
+        return $this->success_response($extended_stats);
     }
     
     /**

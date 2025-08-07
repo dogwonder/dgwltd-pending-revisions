@@ -136,14 +136,54 @@ class Activator {
             PRIMARY KEY (id),
             KEY revision_id (revision_id),
             KEY post_id (post_id),
-            KEY meta_key (meta_key)
+            KEY meta_key (meta_key),
+            KEY post_meta_key (post_id, meta_key),
+            KEY revision_meta_key (revision_id, meta_key),
+            KEY created_at_idx (created_at)
         ) $charset_collate;";
         
         require_once ABSPATH . 'wp-admin/includes/upgrade.php';
         dbDelta($sql);
         
+        // Add essential indexes to WordPress posts table for revision performance
+        self::add_revision_indexes();
+        
         // Store database version for future upgrades
         update_option('dgw_pending_revisions_db_version', '1.0.0');
+    }
+    
+    /**
+     * Add essential indexes to WordPress tables for revision queries
+     *
+     * @since 1.0.0
+     * @return void
+     */
+    private static function add_revision_indexes(): void {
+        global $wpdb;
+        
+        // Check if indexes already exist to avoid errors
+        $existing_indexes = $wpdb->get_results(
+            "SHOW INDEX FROM {$wpdb->posts} WHERE Key_name IN ('post_type_status_modified_idx', 'parent_type_idx')",
+            ARRAY_A
+        );
+        
+        $existing_index_names = array_column($existing_indexes, 'Key_name');
+        
+        // Add index for revision queries (post_type, post_status, post_modified)
+        if (!in_array('post_type_status_modified_idx', $existing_index_names, true)) {
+            $wpdb->query(
+                "ALTER TABLE {$wpdb->posts} ADD INDEX post_type_status_modified_idx (post_type, post_status, post_modified)"
+            );
+        }
+        
+        // Add index for parent-child relationships (post_parent, post_type)
+        if (!in_array('parent_type_idx', $existing_index_names, true)) {
+            $wpdb->query(
+                "ALTER TABLE {$wpdb->posts} ADD INDEX parent_type_idx (post_parent, post_type)"
+            );
+        }
+        
+        error_log('DGW Pending Revisions: Essential database indexes added');
     }
     
     /**

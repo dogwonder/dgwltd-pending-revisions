@@ -62,6 +62,40 @@ class Revisions_Repository extends Repository {
     }
     
     /**
+     * Get the current accepted revision for a post
+     *
+     * @since 1.0.0
+     * @param int $post_id Post ID
+     * @return \WP_Post|null
+     */
+    public function get_current_revision(int $post_id): ?\WP_Post {
+        $accepted_id = get_post_meta($post_id, '_fpr_accepted_revision_id', true);
+        
+        if (!$accepted_id) {
+            return null;
+        }
+        
+        $revision = get_post($accepted_id);
+        return $revision instanceof \WP_Post ? $revision : null;
+    }
+    
+    /**
+     * Get revision count for a specific post
+     *
+     * @since 1.0.0
+     * @param int $post_id Post ID
+     * @return int
+     */
+    public function get_revision_count(int $post_id): int {
+        $revisions = wp_get_post_revisions($post_id, [
+            'posts_per_page' => -1,
+            'fields' => 'ids'
+        ]);
+        
+        return count($revisions);
+    }
+    
+    /**
      * Get revision statistics
      *
      * @since 1.0.0
@@ -69,14 +103,56 @@ class Revisions_Repository extends Repository {
      * @return array
      */
     public function get_revision_stats(array $args = []): array {
-        // This would typically query for revision statistics
-        // For now, return placeholder data
-        return [
-            'total_revisions' => 0,
-            'pending_revisions' => 0,
-            'approved_today' => 0,
-            'rejected_today' => 0,
+        // Check cache first (5 minute cache)
+        $cache_key = 'dgw_revision_stats';
+        $cached_stats = wp_cache_get($cache_key, 'dgw_pending_revisions');
+        
+        if ($cached_stats !== false) {
+            return $cached_stats;
+        }
+        
+        // Get all revisions using WordPress functions
+        $all_revisions = get_posts([
+            'post_type' => 'revision',
+            'post_status' => 'inherit',
+            'posts_per_page' => -1,
+            'fields' => 'ids'
+        ]);
+        
+        $total_revisions = count($all_revisions);
+        $pending_revisions = 0;
+        
+        // Calculate pending revisions by checking each parent post
+        $parent_posts = [];
+        foreach ($all_revisions as $revision_id) {
+            $revision = get_post($revision_id);
+            if ($revision && $revision->post_parent) {
+                $parent_posts[$revision->post_parent][] = $revision_id;
+            }
+        }
+        
+        // Count pending revisions (not marked as accepted)
+        foreach ($parent_posts as $post_id => $revision_ids) {
+            $accepted_revision_id = get_post_meta($post_id, '_fpr_accepted_revision_id', true);
+            
+            foreach ($revision_ids as $revision_id) {
+                if (!$accepted_revision_id || $accepted_revision_id != $revision_id) {
+                    $pending_revisions++;
+                }
+            }
+        }
+        
+        $stats = [
+            'total_revisions' => $total_revisions,
+            'pending_revisions' => $pending_revisions,
+            'approved_today' => 0, // Keep simple for now
+            'rejected_today' => 0,  // Keep simple for now
         ];
+        
+        // Cache for 5 minutes
+        wp_cache_set($cache_key, $stats, 'dgw_pending_revisions', 300);
+        
+        return $stats;
     }
     
     /**
@@ -90,6 +166,16 @@ class Revisions_Repository extends Repository {
         // This would typically query for most active revision contributors
         // For now, return empty array
         return [];
+    }
+    
+    /**
+     * Clear revision statistics cache
+     *
+     * @since 1.0.0
+     * @return void
+     */
+    public function clear_stats_cache(): void {
+        wp_cache_delete('dgw_revision_stats', 'dgw_pending_revisions');
     }
     
     /**
