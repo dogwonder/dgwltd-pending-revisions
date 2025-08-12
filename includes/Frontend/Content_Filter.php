@@ -28,6 +28,11 @@ class Content_Filter {
      * @return string
      */
     public function filter_content(string $content): string {
+        // Don't filter content in admin area
+        if (is_admin()) {
+            return $content;
+        }
+        
         if (is_preview() && !isset($_GET['fpr-preview'])) {
             return $content;
         }
@@ -62,6 +67,11 @@ class Content_Filter {
      * @return string
      */
     public function filter_title(string $title, $post = null): string {
+        // Don't filter titles in admin area
+        if (is_admin()) {
+            return $title;
+        }
+        
         if (is_preview() && !isset($_GET['fpr-preview'])) {
             return $title;
         }
@@ -95,6 +105,11 @@ class Content_Filter {
      * @return string
      */
     public function filter_excerpt(string $excerpt): string {
+        // Don't filter excerpts in admin area
+        if (is_admin()) {
+            return $excerpt;
+        }
+        
         if (is_preview() && !isset($_GET['fpr-preview'])) {
             return $excerpt;
         }
@@ -131,6 +146,11 @@ class Content_Filter {
      * @return mixed
      */
     public function filter_meta($value, int $object_id, string $meta_key, bool $single) {
+        // Don't filter metadata in admin area
+        if (is_admin()) {
+            return $value;
+        }
+        
         if (is_preview() && !isset($_GET['fpr-preview'])) {
             return $value;
         }
@@ -176,6 +196,11 @@ class Content_Filter {
      * @return array
      */
     public function filter_terms(array $terms, array $object_ids, array $taxonomies, array $args): array {
+        // Don't filter terms in admin area
+        if (is_admin()) {
+            return $terms;
+        }
+        
         if (is_preview() && !isset($_GET['fpr-preview'])) {
             return $terms;
         }
